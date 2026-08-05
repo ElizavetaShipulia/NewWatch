@@ -1,7 +1,10 @@
-#include <iostream>
+#include "core/logger.hpp"
 
 int main()
 {
-    std::cout << "NetWatch started!" << std::endl;
+    Logger::info("NetWatch started");
+    Logger::warning("Configuration file not found, using defaults");
+    Logger::error("Demo error message");
+
     return 0;
 }

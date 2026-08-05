@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(NetWatch
     src/main.cpp
+    src/core/logger.cpp
 )
 
 target_include_directories(NetWatch PRIVATE
