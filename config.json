@@ -1,0 +1,6 @@
+{
+    "host": "google.com",
+    "port": 80,
+    "timeout": 3000,
+    "logLevel": "info"
+}

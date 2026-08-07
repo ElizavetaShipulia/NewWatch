@@ -1,10 +1,21 @@
+#include "core/config_manager.hpp"
 #include "core/logger.hpp"
 
 int main()
 {
     Logger::info("NetWatch started");
-    Logger::warning("Configuration file not found, using defaults");
-    Logger::error("Demo error message");
+
+    ConfigManager config;
+
+    if (!config.load("config.json"))
+    {
+        return 1;
+    }
+
+    Logger::info("Host: " + config.getHost());
+    Logger::info("Port: " + std::to_string(config.getPort()));
+    Logger::info("Timeout: " + std::to_string(config.getTimeout()));
+    Logger::info("Log level: " + config.getLogLevel());
 
     return 0;
 }
