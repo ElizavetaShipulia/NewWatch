@@ -10,6 +10,7 @@ add_executable(NetWatch
     src/main.cpp
     src/core/logger.cpp
     src/core/config_manager.cpp
+    src/network/network_scanner.cpp
 )
 
 target_include_directories(NetWatch PRIVATE

@@ -17,13 +17,22 @@ bool ConfigManager::load(const std::string& filename)
         return false;
     }
 
-    json config;
-    file >> config;
+    try
+    {
+        json config;
+        file >> config;
 
-    host_ = config.value("host", "localhost");
-    port_ = config.value("port", 80);
-    timeout_ = config.value("timeout", 3000);
-    logLevel_ = config.value("logLevel", "info");
+        host_ = config.value("host", "localhost");
+        port_ = config.value("port", 80);
+        timeout_ = config.value("timeout", 3000);
+        logLevel_ = config.value("logLevel", "info");
+    }
+    catch (const json::exception& error)
+    {
+        Logger::error(
+            "Failed to parse config file: " + std::string(error.what()));
+        return false;
+    }
 
     Logger::info("Configuration loaded successfully");
 
@@ -49,3 +58,4 @@ std::string ConfigManager::getLogLevel() const
 {
     return logLevel_;
 }
+

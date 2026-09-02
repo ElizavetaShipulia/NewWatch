@@ -1,6 +1,6 @@
 {
-    "host": "google.com",
-    "port": 80,
-    "timeout": 3000,
+    "host": "localhost",
+    "port": 8080,
+    "timeout": 30,
     "logLevel": "info"
 }
