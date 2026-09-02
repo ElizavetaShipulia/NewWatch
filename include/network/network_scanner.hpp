@@ -2,8 +2,22 @@
 
 #include <string>
 
+enum class ScanResult
+{
+    Open,
+    ConnectionRefused,
+    Timeout,
+    HostUnreachable,
+    NetworkUnreachable,
+    InvalidAddress,
+    SocketError
+};
+
 class NetworkScanner
 {
 public:
-    void scan(const std::string& host);
+    ScanResult checkPort(
+        const std::string& host,
+        int port,
+        int timeoutMs) const;
 };
