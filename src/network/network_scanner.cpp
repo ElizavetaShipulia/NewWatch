@@ -2,7 +2,9 @@
 
 #include <arpa/inet.h>
 #include <cerrno>
+#include <fcntl.h>
 #include <netinet/in.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -18,6 +20,20 @@ ScanResult NetworkScanner::checkPort(
         return ScanResult::SocketError;
     }
 
+    int flags = fcntl(socketFd, F_GETFL, 0);
+
+    if (flags == -1)
+    {
+        close(socketFd);
+        return ScanResult::SocketError;
+    }
+
+    if (fcntl(socketFd, F_SETFL, flags | O_NONBLOCK) == -1)
+    {
+        close(socketFd);
+        return ScanResult::SocketError;
+    }
+
     sockaddr_in address{};
     address.sin_family = AF_INET;
     address.sin_port = htons(port);
@@ -26,22 +42,6 @@ ScanResult NetworkScanner::checkPort(
     {
         close(socketFd);
         return ScanResult::InvalidAddress;
-    }
-
-    timeval timeout{};
-    timeout.tv_sec = timeoutMs / 1000;
-    timeout.tv_usec = (timeoutMs % 1000) * 1000;
-
-    if (setsockopt(
-            socketFd,
-            SOL_SOCKET,
-            SO_SNDTIMEO,
-            &timeout,
-            sizeof(timeout))
-        == -1)
-    {
-        close(socketFd);
-        return ScanResult::SocketError;
     }
 
     int result = connect(
@@ -55,11 +55,80 @@ ScanResult NetworkScanner::checkPort(
         return ScanResult::Open;
     }
 
-    int error = errno;
+    if (errno != EINPROGRESS)
+    {
+        int error = errno;
+
+        close(socketFd);
+
+        switch (error)
+        {
+            case ECONNREFUSED:
+                return ScanResult::ConnectionRefused;
+
+            case EHOSTUNREACH:
+                return ScanResult::HostUnreachable;
+
+            case ENETUNREACH:
+                return ScanResult::NetworkUnreachable;
+
+            default:
+                return ScanResult::SocketError;
+        }
+    }
+
+    fd_set writeSet;
+
+    FD_ZERO(&writeSet);
+    FD_SET(socketFd, &writeSet);
+
+    timeval timeout{};
+    timeout.tv_sec = timeoutMs / 1000;
+    timeout.tv_usec = (timeoutMs % 1000) * 1000;
+
+    int selectResult = select(
+        socketFd + 1,
+        nullptr,
+        &writeSet,
+        nullptr,
+        &timeout);
+
+    if (selectResult == 0)
+    {
+        close(socketFd);
+        return ScanResult::Timeout;
+    }
+
+    if (selectResult < 0)
+    {
+        close(socketFd);
+        return ScanResult::SocketError;
+    }
+
+    int socketError = 0;
+    socklen_t socketErrorLength = sizeof(socketError);
+
+    if (getsockopt(
+            socketFd,
+            SOL_SOCKET,
+            SO_ERROR,
+            &socketError,
+            &socketErrorLength)
+        == -1)
+    {
+        close(socketFd);
+        return ScanResult::SocketError;
+    }
+
+    if (socketError == 0)
+    {
+        close(socketFd);
+        return ScanResult::Open;
+    }
 
     close(socketFd);
 
-    switch (error)
+    switch (socketError)
     {
         case ECONNREFUSED:
             return ScanResult::ConnectionRefused;
